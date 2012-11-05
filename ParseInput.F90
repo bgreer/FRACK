@@ -20,6 +20,16 @@ MODULE ParseInput
 
 CONTAINS
 
+	SUBROUTINE Usage()
+		IMPLICIT NONE
+		PRINT*, "Minimal Usage: ./frack"
+		PRINT*, "Other Options:"
+		PRINT*, " -v      Verbose Mode"
+		PRINT*, " -r [#]  Tracking rate (0=car, 1=snod, 2=custom)"
+		PRINT*, " -ml [file]  Master list of dopplergrams"
+		PRINT*, " -and others"
+	END SUBROUTINE Usage
+
 	! Note the lack of IMPLICIT NONE
 	! Poor coding? Maybe.
 	! TODO: add more command-line options
@@ -28,21 +38,15 @@ CONTAINS
 		CHARACTER(LEN=200) :: strbuffer
 
 		argcount = IARGC()
-		IF (argcount .lt. 2) THEN
-			PRINT*, "Minimal Usage: ./frack -t #CROT:#CMLON"
-			PRINT*, " Example: ./frack -t 2096:180"
-			PRINT*, "Other Options:"
-			PRINT*, " -v      Verbose Mode"
-			PRINT*, " -l [#]  Number of timesteps to track for"
-			PRINT*, " -r [#]  Tracking rate (0=car, 1=snod, 2=custom)"
-			PRINT*, " -ml [file]  Master list of dopplergrams"
-			PRINT*, " -and others"
-			STOP
-		ENDIF
 
 		! Read command line arguments
 		DO ii=1,argcount
 			CALL getarg(ii,strbuffer)
+
+			IF (strbuffer .EQ. "--help") THEN
+				CALL Usage()
+				STOP
+			ENDIF
 
 			! verbose mode
 			IF (strbuffer .EQ. "-v") THEN
