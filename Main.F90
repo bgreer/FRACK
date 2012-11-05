@@ -55,23 +55,14 @@ PROGRAM FRACK
 	IF (verbose .AND. myid .EQ. 0) CALL PrintDetails()
 
 
-	! Count number of tiles needed
-	tilecount = 0
-	DO ii=6,1,-1
-		IF (dotilesize(ii)) THEN
-			currsize = 2**(ii-1)
-			numtiles(ii) = GetTileCount(currsize,lonrn,latrn,apode)
-			tilecount = tilecount + numtiles(ii)
-			IF (verbose .AND. myid .EQ. 0) &
-				WRITE(*,'(A,I6,A,I2,A)') "Adding ",numtiles(ii)," ", &
-					currsize," degree tiles"
-		ENDIF
-	ENDDO
-	
+	! Count number of tiles needed for each tilesize
+	CALL CountTiles(myid, tilecount, dotilesize, numtiles, lonrn, latrn, apode, verbose)
+	! Allocate info foreach tile
 	ALLOCATE(tilesize(tilecount))
 	ALLOCATE(lon(tilecount))
 	ALLOCATE(lat(tilecount))
 	ALLOCATE(delta_rot(tilecount))
+	
 	! Go back through and load details of each tile
 	currtile = 1
 	DO ii=6,1,-1
@@ -88,36 +79,44 @@ PROGRAM FRACK
 	ENDDO
 	CALL AddTime(3)
 
-	! Allocate dop info before reading master list
-	ALLOCATE(doptime(nsteps))
-	ALLOCATE(dopfname(nsteps))
-	ALLOCATE(dopinterp(nsteps))
-	ALLOCATE(dop_p_angle(nsteps))
-	ALLOCATE(dop_cen_lon(nsteps))
-	ALLOCATE(dop_cen_lat(nsteps))
-	ALLOCATE(dop_cen_xpix(nsteps))
-	ALLOCATE(dop_cen_ypix(nsteps))
-	ALLOCATE(dop_r_sun_pix(nsteps))
-
 	! Let proc0 read the master dop list
 	CALL AddTime(4)
 	IF (myid .EQ. 0) THEN
 		IF (verbose) WRITE(*,'(A)') "Reading Master List.."
 			! File_Management.F90
-		CALL Make_Dopplergram_List(myid, crot, cmlon, nsteps, masterlist, &
-		dopfname, doptime, dopinterp, dopfname_ends, doptime_ends)
+!		CALL Make_Dopplergram_List(myid, crot, cmlon, nsteps, masterlist, &
+!		dopfname, doptime, dopinterp, dopfname_ends, doptime_ends)
+		CALL Load_Dopplergram_List(myid, nsteps, masterlist, dopfname, doptime, dopinterp)
 	ENDIF
 	CALL AddTime(5)
 
 	! Communicate master dop list to all procs
 	IF (myid .EQ. 0 .AND. verbose) &
 		WRITE(*,'(A)') "Broadcasting dopplergram list to all procs.."
+	CALL MPI_BCAST(nsteps, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+	IF (myid .NE. 0) THEN
+		ALLOCATE(doptime(nsteps))
+		ALLOCATE(dopfname(nsteps))
+		ALLOCATE(dopinterp(nsteps))
+	ENDIF
+	ALLOCATE(dop_p_angle(nsteps))
+	ALLOCATE(dop_cen_lon(nsteps))
+	ALLOCATE(dop_cen_lat(nsteps))
+	ALLOCATE(dop_cen_xpix(nsteps))
+	ALLOCATE(dop_cen_ypix(nsteps))
+	ALLOCATE(dop_r_sun_pix(nsteps))
 	CALL MPI_BCAST(doptime, nsteps, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
-	CALL MPI_BCAST(doptime_ends, 2, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+!	CALL MPI_BCAST(doptime_ends, 2, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 	CALL MPI_BCAST(dopfname, nsteps*200, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
-	CALL MPI_BCAST(dopfname_ends, 400, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+!	CALL MPI_BCAST(dopfname_ends, 400, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)
+	CALL MPI_BCAST(dopinterp, nsteps, MPI_LOGICAL, 0, MPI_COMM_WORLD, ierr)
 	CALL AddTime(6)
 
+	! Can't interpolate first or last dopplergram
+	IF (dopinterp(1) .OR. dopinterp(nsteps)) THEN
+		WRITE(*,'(A)') "FATAL ERROR: Can't interpolate first or last dopplergram :("
+		STOP
+	ENDIF
 
 	! Main loop through tile size
 	!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -130,7 +129,7 @@ PROGRAM FRACK
 			currsize = 2**(ii-1)
 
 			IF (verbose .AND. myid .EQ. 0) WRITE(*,'(A,I0,A,I0,A)') &
-					"Tracking tilesize",currsize," (",numtiles(ii)," tiles)"
+					"Tracking tilesize ",currsize," (",numtiles(ii)," tiles)"
 
 			! fill up each processor and run tracking
 			! until no tiles are left

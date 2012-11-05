@@ -73,12 +73,12 @@ Contains
 		DEALLOCATE(buff)
 
 		! load important keys
-		CALL FTGKYE(30,"CRLN_OBS",dop_cen_lon,record,stat) ! is this right?
-		CALL FTGKYE(30,"CRLT_OBS",dop_cen_lat,record,stat)
-		CALL FTGKYE(30,"CRPIX1",dop_cen_xpix,record,stat)
-		CALL FTGKYE(30,"CRPIX2",dop_cen_ypix,record,stat)
-		CALL FTGKYE(30,"CROTA2",dop_p_angle,record,stat)
-		CALL FTGKYE(30,"RSUN_OBS",dop_r_sun_pix,record,stat)
+!		CALL FTGKYE(30,"CRLN_OBS",dop_cen_lon,record,stat) ! is this right?
+!		CALL FTGKYE(30,"CRLT_OBS",dop_cen_lat,record,stat)
+!		CALL FTGKYE(30,"CRPIX1",dop_cen_xpix,record,stat)
+!		CALL FTGKYE(30,"CRPIX2",dop_cen_ypix,record,stat)
+!		CALL FTGKYE(30,"CROTA2",dop_p_angle,record,stat)
+!		CALL FTGKYE(30,"RSUN_OBS",dop_r_sun_pix,record,stat)
 
 		CALL FTCLOS(30,stat)
 
@@ -175,6 +175,44 @@ Contains
 			CALL Kill_All(myid)
 		ENDIF
 	END SUBROUTINE Make_Dopplergram_List
+
+	! loads a list of dopplergrams, assume you are tracking through all of them
+	! overwrites nsteps
+	SUBROUTINE Load_Dopplergram_List(myid, nsteps, masterlist, dopfname, doptime, dopinterp)
+		INTEGER :: myid, nsteps, ii, intbuffer, stat
+		CHARACTER(LEN=*) :: masterlist
+		CHARACTER(LEN=200), ALLOCATABLE :: dopfname(:)
+		CHARACTER(LEN=200) :: strbuffer
+		INTEGER, ALLOCATABLE :: doptime(:)
+		LOGICAL, ALLOCATABLE :: dopinterp(:)
+
+		! count number of lines
+		OPEN(2, FILE=masterlist)
+		nsteps = 0
+		stat = 0
+		DO WHILE (stat .EQ. 0)
+			READ(2,*,IOSTAT=stat) strbuffer, intbuffer
+			IF (stat .EQ. 0) nsteps = nsteps + 1
+		ENDDO
+		CLOSE(2)
+		! Allocate space
+		ALLOCATE(dopfname(nsteps))
+		ALLOCATE(doptime(nsteps))
+		ALLOCATE(dopinterp(nsteps))
+		! read nsteps into normal list
+		OPEN(2, FILE=masterlist)
+		DO ii=1,nsteps
+			READ(2,*) strbuffer, intbuffer
+			dopfname(ii) = TRIM(strbuffer)
+			doptime(ii) = intbuffer
+			IF (dopfname(ii) .EQ. '0') THEN
+				dopinterp(ii) = .TRUE.
+			ELSE
+				dopinterp(ii) = .FALSE.
+			ENDIF
+		ENDDO
+		CLOSE(2)
+	END SUBROUTINE Load_Dopplergram_List
 
 	! Save a single tile to disk
 	! INPUT: arr, dim*, filename, vebrose

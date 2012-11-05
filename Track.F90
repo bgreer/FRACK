@@ -24,6 +24,7 @@ CONTAINS
 		LOGICAL :: dopinterp(nsteps)
 		INTEGER :: loaddops, numdops, dopstart, dopend
 		REAL, ALLOCATABLE :: dopdata(:,:,:), dopdata_ends(:,:,:), tempslice(:,:)
+		REAL :: tempdop(4096,4096)
 		INTEGER :: sendcnts(0:nproc-1), sdispls(0:nproc-1)
 		INTEGER :: recvcnts(0:nproc-1), rdispls(0:nproc-1)
 		INTEGER :: ti, di, ii2
@@ -50,17 +51,7 @@ CONTAINS
 
 		! allocate space for dopplergrams
 		ALLOCATE(dopdata(4096,4096,loaddops)) ! allow for interp at ends
-		ALLOCATE(dopdata_ends(4096,4096,2))
-		! go ahead and load end dops (i dont use these yet) (TODO)
-		IF (dopinterp(1)) THEN ! start
-!			CALL Read_Dopplergram(dopfname_ends(1), dopdata_ends(:,:,1), myid,&
-!					verbose)
-		ENDIF
-		IF (dopinterp(nsteps)) THEN ! end
-!			CALL Read_Dopplergram(dopfname_ends(2), dopdata_ends(:,:,2), myid,&
-!					verbose)
-		ENDIF
-
+		dopdata(:,:,:) = 0.0
 		! even if i have no tiles to track, still help load
 		!  dops for other processors; sharing is caring.
 		! loop through dopplergrams in chunks to track all tiles
@@ -75,12 +66,14 @@ CONTAINS
 				IF (.NOT.dopinterp(stepsdone+ii)) THEN
 					ii2 = stepsdone+ii
 					CALL Read_Dopplergram(dopfname(ii2),&
-						dopdata(:,:,ii),dop_cen_lon(ii2),dop_cen_lat(ii2),&
+						tempdop,dop_cen_lon(ii2),dop_cen_lat(ii2),&
 						dop_cen_xpix(ii2),dop_cen_ypix(ii2),dop_p_angle(ii2),&
 						dop_r_sun_pix(ii2),myid,verbose)
+					dopdata(:,:,ii) = tempdop(:,:)
 				ENDIF
 			ENDDO
-			CALL AddTIme(2001)
+			CALL AddTime(2001)
+			CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
 			! do an alltoallv to communicate dops
 			sendcnts(:) = INT((dopend-dopstart+1)*4096*4096)
 			sdispls(:) = INT((dopstart-1)*4096*4096+1) ! dont add 1?
@@ -89,6 +82,7 @@ CONTAINS
 					FLOOR(numdops*1.0*ii/nproc))*4096*4096
 				rdispls(ii+1) = FLOOR(numdops*1.0*(ii)/nproc)+1
 			ENDDO
+			PRINT*, myid, sendcnts
 			! TODO: fix alltoall, make nick do this
 			CALL MPI_Alltoallv(dopdata(1,1,1),sendcnts,sdispls,MPI_REAL,&
 				dopdata(1,1,1),recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)

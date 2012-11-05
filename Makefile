@@ -28,4 +28,4 @@ clean : cleandop
 	rm -f frack *.o *.mod
 
 cleandop :
-	rm DopTime
+	rm -f DopTime

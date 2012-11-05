@@ -1,4 +1,7 @@
 
+! This file handles things having to do with the gridding scheme
+! it will decide how many tiles are needed, where they should be placed, etc
+
 MODULE Grid
 	IMPLICIT NONE
 
@@ -72,4 +75,26 @@ CONTAINS
 		space = ts*0.5*apode
 		GetTileCount = INT(lonrn/space+1)*INT(latrn/space+1)
 	END FUNCTION
+
+	
+	SUBROUTINE CountTiles(myid, tilecount, dotilesize, numtiles, lonrn, latrn, apode, verbose)
+		IMPLICIT NONE
+		INTEGER :: tilecount, myid, currsize, ii
+		INTEGER :: numtiles(6)
+		LOGICAL :: verbose, dotilesize(6)
+		REAL :: lonrn, latrn, apode
+
+		tilecount = 0
+		DO ii=6,1,-1
+			IF (dotilesize(ii)) THEN
+				currsize = 2**(ii-1)
+				numtiles(ii) = GetTileCount(currsize,lonrn,latrn,apode)
+				tilecount = tilecount + numtiles(ii)
+				IF (verbose .AND. myid .EQ. 0) &
+					WRITE(*,'(A,I6,A,I2,A)') "Adding ",numtiles(ii)," ", &
+						currsize," degree tiles"
+			ENDIF
+		ENDDO
+	END SUBROUTINE CountTiles
+
 END MODULE
