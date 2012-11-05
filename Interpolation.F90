@@ -31,6 +31,12 @@ CONTAINS
 		ix(4) = MIN(ix(2)+2,dimx)
 		iy(4) = MIN(iy(2)+2,dimx)
 
+		! check bounds
+!		IF (dimx-x .LT. 2 .OR. dimx-y .LT. 2 .OR. x .LT. 2 .OR. y .LT. 2) THEN
+!			PRINT*, "ERROR"
+!			STOP
+!		ENDIF
+
 		! Interpolate at current y-val
 		rx = 0.0
 		DO ii=1,4 ! x-index

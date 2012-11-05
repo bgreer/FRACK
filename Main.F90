@@ -147,6 +147,8 @@ PROGRAM FRACK
 					dopfname,doptime,dopfname_ends,doptime_ends,dopinterp,loaddops,verbose)
 				completed = completed + num
 				currtile = currtile + num
+
+				CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
 			
 			ENDDO
 		ENDIF

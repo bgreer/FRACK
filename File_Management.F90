@@ -1,16 +1,6 @@
 Module File_Management
 	USE Communication_Library
 	Implicit None
-	!==================================
-	! these are from nick, TODO: delete
-	Integer :: n_images, n_tracked_images
-	Integer :: npasses
-	Integer, Allocatable :: img_per_pass(:)   ! Number of raw Dopplergrams read during each pass
-	Integer, Allocatable :: myn_per_pass(:) ! Number of Dopplergrams an individual cpu is 
-														 ! responsible for during each pass.
-	Integer, Allocatable :: max_per_pass(:) ! Maximum number of Dopplergrams read in by a processor during each pass
-	Integer, Allocatable :: file_indices(:,:)  ! File indices read by each processor on 
-
 
 	! Data for dopplergrams
 	LOGICAL, ALLOCATABLE :: dopinterp(:)
@@ -108,7 +98,7 @@ Contains
 
 		! decide the time for the first dopplergram
 		! find middle time, then subtract 45*nsteps/2 seconds
-		starttime = 1040 ! TODO fix this
+		starttime = 1040 ! fix this
 
 		! read master list and find closest to start
 		closest = 1

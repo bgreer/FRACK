@@ -115,8 +115,8 @@ CONTAINS
 		nsteps = 2048
 		trackrate = 0
 		ndopp = 5
-		lonrn = 0D0
-		latrn = 0D0
+		lonrn = 40D0
+		latrn = 40D0
 		clon = 50D0
 		clat = 50D0
 		dotilesize(1) = .FALSE.

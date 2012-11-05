@@ -121,8 +121,7 @@ CONTAINS
 						currlon = lon(ti)+delta_rot(ti)*delta_time
 						currlat = lat(ti)
 						CALL AddTime(3000)
-						PRINT*, dopdata(2000,2000,di)
-						CALL Projection(currlon,currlat,ix,dopdata(:,:,di),tempslice,&
+						CALL Projection(currlon,currlat,ix,dopdata(:,:,ii),tempslice,&
 							dop_cen_xpix(di),dop_cen_ypix(di),dop_cen_lon(di),&
 							dop_cen_lat(di),dop_p_angle(di),dop_r_sun_pix(di))
 						CALL AddTime(3001)
@@ -135,6 +134,8 @@ CONTAINS
 
 			stepsdone = stepsdone + numdops
 		ENDDO
+		
+		CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
 		! go back and interpolate missing frames
 		DO ii=2,nsteps-1
@@ -145,7 +146,6 @@ CONTAINS
 			ENDIF
 		ENDDO
 		
-
 		DEALLOCATE(tempslice)
 		DEALLOCATE(dopdata)
 		! save and deallocate all tiles on this proc
@@ -222,10 +222,10 @@ CONTAINS
 				IF (coslat .EQ. 0.0) THEN
 					sinlon = 0.0
 				ELSE
-					sinlon = sinr*cosp / coslat
+					sinlon = MIN(MAX(sinr*cosp / coslat,-1D0),1D0)
 				ENDIF
 				plon = asin(sinlon)
-				! "Correction suggested by Dick Shine"
+				! "Correction suggested by Dick Shine" - mtrack
 				IF (cosr .LT. (sinlat * sin_lat_tile_center)) plon = PI-plon
 				! rotate lon to tile center
 				plon = plon + lon_tile_center*rad_per_deg
@@ -240,6 +240,7 @@ CONTAINS
 				! starting projection math
 				cos_lat_lon = cos_lat * cos(plon-lon_disk_center*rad_per_deg)
 				cos_cang = sin_lat * sin_lat_disk_center + cos_lat_disk_center * cos_lat_lon
+
 				! check if off disk
 				IF (cos_cang < 0.0) THEN
 					val = 0D0 ! missingval
