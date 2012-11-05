@@ -73,12 +73,12 @@ Contains
 		DEALLOCATE(buff)
 
 		! load important keys
-!		CALL FTGKYE(30,"CRLN_OBS",dop_cen_lon,record,stat) ! is this right?
-!		CALL FTGKYE(30,"CRLT_OBS",dop_cen_lat,record,stat)
-!		CALL FTGKYE(30,"CRPIX1",dop_cen_xpix,record,stat)
-!		CALL FTGKYE(30,"CRPIX2",dop_cen_ypix,record,stat)
-!		CALL FTGKYE(30,"CROTA2",dop_p_angle,record,stat)
-!		CALL FTGKYE(30,"RSUN_OBS",dop_r_sun_pix,record,stat)
+		CALL FTGKYE(30,"CRLN_OBS",dop_cen_lon,record,stat) ! is this right?
+		CALL FTGKYE(30,"CRLT_OBS",dop_cen_lat,record,stat)
+		CALL FTGKYE(30,"CRPIX1",dop_cen_xpix,record,stat)
+		CALL FTGKYE(30,"CRPIX2",dop_cen_ypix,record,stat)
+		CALL FTGKYE(30,"CROTA2",dop_p_angle,record,stat)
+		CALL FTGKYE(30,"RSUN_OBS",dop_r_sun_pix,record,stat)
 
 		CALL FTCLOS(30,stat)
 

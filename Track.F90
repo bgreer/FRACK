@@ -25,8 +25,8 @@ CONTAINS
 		INTEGER :: loaddops, numdops, dopstart, dopend
 		REAL, ALLOCATABLE :: dopdata(:,:,:), dopdata_ends(:,:,:), tempslice(:,:)
 		REAL :: tempdop(4096,4096)
-		INTEGER :: sendcnts(0:nproc-1), sdispls(0:nproc-1)
-		INTEGER :: recvcnts(0:nproc-1), rdispls(0:nproc-1)
+		INTEGER :: sendcnts(nproc), sdispls(nproc)
+		INTEGER :: recvcnts(nproc), rdispls(nproc)
 		INTEGER :: ti, di, ii2
 		REAL :: currlon, currlat, delta_time
 
@@ -62,6 +62,8 @@ CONTAINS
 			numdops = MIN(nsteps-stepsdone, loaddops)
 			dopstart = FLOOR(numdops*1.0*myid/nproc)+1
 			dopend = FLOOR(numdops*1.0*(myid+1)/nproc)
+			dopstart = 1 ! remove this when the alltoallv works
+			dopend = numdops ! and this
 			DO ii=dopstart,dopend
 				IF (.NOT.dopinterp(stepsdone+ii)) THEN
 					ii2 = stepsdone+ii
@@ -74,18 +76,18 @@ CONTAINS
 			ENDDO
 			CALL AddTime(2001)
 			CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+
 			! do an alltoallv to communicate dops
-			sendcnts(:) = INT((dopend-dopstart+1)*4096*4096)
-			sdispls(:) = INT((dopstart-1)*4096*4096+1) ! dont add 1?
-			DO ii=0,nproc-1
-				recvcnts(ii+1) = INT(FLOOR(numdops*1.0*(ii+1)/nproc)-&
-					FLOOR(numdops*1.0*ii/nproc))*4096*4096
-				rdispls(ii+1) = FLOOR(numdops*1.0*(ii)/nproc)+1
-			ENDDO
-			PRINT*, myid, sendcnts
+!			sendcnts(:) = INT((dopend-dopstart+1)*4096*4096)
+!			sdispls(:) = INT((dopstart-1)*4096*4096) ! dont add 1?
+!			DO ii=0,nproc-1
+!				recvcnts(ii+1) = INT(FLOOR(numdops*1.0*(ii+2)/nproc)-&
+!					FLOOR(numdops*1.0*(ii+1)/nproc))*4096*4096
+!				rdispls(ii+1) = (FLOOR(numdops*1.0*(ii)/nproc))*4096*4096
+!			ENDDO
 			! TODO: fix alltoall, make nick do this
-			CALL MPI_Alltoallv(dopdata(1,1,1),sendcnts,sdispls,MPI_REAL,&
-				dopdata(1,1,1),recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+!			CALL MPI_Alltoallv(dopdata(1,1,1),sendcnts,sdispls,MPI_REAL,&
+!				dopdata(1,1,1),recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
 			CALL AddTime(2002)
 			! do an alltoallv to communicate all accessory dop info
 			sendcnts(:) = dopend-dopstart+1
@@ -98,8 +100,6 @@ CONTAINS
 			! TODO: fix alltoall, make nick do this
 !			CALL MPI_Alltoallv(dop_cen_xpix,sendcnts,sdispls,MPI_REAL,&
 !			dop_cen_xpix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			PRINT*, myid, rdispls
-			PRINT*, myid, dop_cen_xpix
 
 			! currently have:
 			!  tiles 'starttile' to 'endtile'
@@ -147,7 +147,6 @@ CONTAINS
 		
 
 		DEALLOCATE(tempslice)
-		DEALLOCATE(dopdata_ends)
 		DEALLOCATE(dopdata)
 		! save and deallocate all tiles on this proc
 		IF (endtile .GE. starttile) THEN
