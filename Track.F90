@@ -156,9 +156,8 @@ CONTAINS
 				! make an appropriate filename TODO this
 				CALL AddTime(4000)
 				! need to say tile size, coordinates, carrington time
-				WRITE(outfile,'(A5,I0,A1,SP,F9.4,A1,F9.4,A5)') "tile_",tilesize,&
-					"_",lon(ti),"_",lat(ti),".fits"
-				PRINT*, myid, TRIM(outfile)
+				WRITE(outfile,'(A5,I0,A1,SP,F0.4,A1,F0.4,A5)') "tile_",tilesize,"_",lon(ti),'_',lat(ti),".fits"
+				IF (verbose) WRITE(*,'(A,I0,A,A)') "Proc ",myid, " saving tile ",TRIM(outfile)
 				CALL Save_Tile(tdata(:,:,:,ij), ix, ix, nsteps, TRIM(outfile), verbose)
 				CALL AddTime(4001)
 			ENDDO
