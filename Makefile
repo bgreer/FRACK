@@ -6,7 +6,7 @@ FITSINC=$(FITSLOC)/include
 #F90  = /usr/local/mpich2-1.0.7/bin/mpif90 -L$(FITSLIB) -lcfitsio
 
 # for laptop
-F90 = mpif90 -lcfitsio -g -pg
+F90 = mpif90 -lcfitsio
 
 all : clean frack DopTime
 

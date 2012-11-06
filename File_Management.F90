@@ -181,7 +181,7 @@ Contains
 		nsteps = 0
 		stat = 0
 		DO WHILE (stat .EQ. 0)
-			READ(2,*,IOSTAT=stat) strbuffer, intbuffer
+			READ(2,*,IOSTAT=stat) strbuffer
 			IF (stat .EQ. 0) nsteps = nsteps + 1
 		ENDDO
 		CLOSE(2)
@@ -192,9 +192,9 @@ Contains
 		! read nsteps into normal list
 		OPEN(2, FILE=masterlist)
 		DO ii=1,nsteps
-			READ(2,*) strbuffer, intbuffer
+			READ(2,*) strbuffer
 			dopfname(ii) = TRIM(strbuffer)
-			doptime(ii) = intbuffer
+			doptime(ii) = 0
 			IF (dopfname(ii) .EQ. '0') THEN
 				dopinterp(ii) = .TRUE.
 			ELSE

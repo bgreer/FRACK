@@ -121,8 +121,8 @@ CONTAINS
 		ndopp = 5
 		lonrn = 40D0
 		latrn = 40D0
-		clon = 50D0
-		clat = 50D0
+		clon = 0D0
+		clat = 0D0
 		dotilesize(1) = .FALSE.
 		dotilesize(2) = .FALSE.
 		dotilesize(3) = .FALSE.
@@ -132,7 +132,7 @@ CONTAINS
 		memlimit = 4.0
 		memlimittotal = 8.0
 		masterlist = "doplist"
-		loaddops = 10
+		loaddops = 8
 		apode = 0.9375D0
 	END SUBROUTINE SetDefaults
 

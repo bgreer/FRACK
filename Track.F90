@@ -117,7 +117,7 @@ CONTAINS
 					! loop through each tile
 					DO ij=1,numtiles
 						! project dop ii into tile ij
-						ti = ij
+						ti = ij + starttile - 1
 						currlon = lon(ti)+delta_rot(ti)*delta_time
 						currlat = lat(ti)
 						CALL AddTime(3000)
@@ -126,7 +126,7 @@ CONTAINS
 							dop_cen_lat(di),dop_p_angle(di),dop_r_sun_pix(di))
 						CALL AddTime(3001)
 						! copy result to tile
-						tdata(:,:,di,ti) = tempslice
+						tdata(:,:,di,ij) = tempslice
 					ENDDO
 				ENDIF
 			ENDDO
@@ -151,11 +151,15 @@ CONTAINS
 		! save and deallocate all tiles on this proc
 		IF (endtile .GE. starttile) THEN
 			IF (verbose) WRITE(*,'(A,I0,A,I0,A)') "Proc ",myid," writing ",numtiles," tiles to disk.."
-			DO ii=1,numtiles
+			DO ij=1,numtiles
+				ti = ij + starttile - 1
 				! make an appropriate filename TODO this
 				CALL AddTime(4000)
-				WRITE(outfile,'(A7,I0,A1,I0,A5)') "testout",myid,"_",ii,".fits"
-				CALL Save_Tile(tdata(:,:,:,ii), ix, ix, nsteps, TRIM(outfile), verbose)
+				! need to say tile size, coordinates, carrington time
+				WRITE(outfile,'(A5,I0,A1,SP,F9.4,A1,F9.4,A5)') "tile_",tilesize,&
+					"_",lon(ti),"_",lat(ti),".fits"
+				PRINT*, myid, TRIM(outfile)
+				CALL Save_Tile(tdata(:,:,:,ij), ix, ix, nsteps, TRIM(outfile), verbose)
 				CALL AddTime(4001)
 			ENDDO
 			DEALLOCATE(tdata)
