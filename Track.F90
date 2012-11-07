@@ -113,7 +113,7 @@ CONTAINS
 			DO ii=1,numdops
 				di = ii+stepsdone
 				IF (.NOT.dopinterp(di)) THEN
-					delta_time = 0D0
+					delta_time = 45D0*di ! TODO: fix later?
 					! loop through each tile
 					DO ij=1,numtiles
 						! project dop ii into tile ij
@@ -196,9 +196,7 @@ CONTAINS
 		cos_p_angle = cos(p_angle*rad_per_deg)
 		sin_p_angle = sin(p_angle*rad_per_deg)
 		
-		r_sun_norm = r_sun_pix * 2D0 / 4096
-
-		PRINT*, cos_p_angle, sin_p_angle
+		r_sun_norm = r_sun_pix * 2D0 / 4096D0
 
 		! pre-computations for efficiency
 		! the b-angle is hidden in the lat_disk_center
@@ -252,7 +250,7 @@ CONTAINS
 					val = 0D0 ! missingval
 				ELSE
 					! r = scale factor on disk?
-					r = r_sun_norm * cos_asd / (1.0 - cos_cang * sin_asd)
+					r = r_sun_norm * cos_asd / (1.D0 - cos_cang * sin_asd)
 					xr = r * cos_lat * sin(plon-lon_disk_center*rad_per_deg)
 					yr = r * (sin_lat*cos_lat_disk_center - sin_lat_disk_center*cos_lat_lon)
 					! rotation matrix (camera and p-angle)

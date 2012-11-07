@@ -83,7 +83,7 @@ CONTAINS
 				CALL getarg(ii+1,strbuffer)
 				READ(strbuffer,*) trackrate
 				IF (trackrate .EQ. 0) THEN ! carrington
-					a0 = 0D0
+					a0 = 1D0
 					a2 = 0D0
 					a4 = 0D0
 				ELSE IF (trackrate .EQ. 1) THEN ! snodgrass
@@ -119,8 +119,8 @@ CONTAINS
 		trackrate = 0
 		lonrn = 00D0
 		latrn = 0D0
-		clon = 39.713158D0
-		clat = -2.471883D0
+		clon = 120D0
+		clat = 0D0
 		dotilesize(1) = .FALSE.
 		dotilesize(2) = .FALSE.
 		dotilesize(3) = .FALSE.
@@ -132,6 +132,7 @@ CONTAINS
 		masterlist = "doplist"
 		loaddops = 8
 		apode = 0.9375D0
+		a0 = 2.D0 ! TODO: enter tracking rates, correct for carrington
 	END SUBROUTINE SetDefaults
 
 	! Print the run details to stdout

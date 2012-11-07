@@ -37,6 +37,7 @@ Contains
 		REAL :: dop_cen_lon, dop_cen_lat
 		REAL :: dop_cen_xpix, dop_cen_ypix
 		REAL :: dop_p_angle, dop_r_sun_pix
+		REAL :: corr1, corr2
 
 		stat = 0
 		! Open input FITS file
@@ -57,7 +58,7 @@ Contains
 		buff = 0
 		DO ii=1,naxes(2)
 			CALL FTGPVE(30,g,offset,naxes(1),nv,buff,anyf,stat)
-			arr(ii,:) = buff
+			arr(:,ii) = buff
 			offset = offset + naxes(1)
 		ENDDO
 		DEALLOCATE(buff)
@@ -69,6 +70,10 @@ Contains
 		CALL FTGKYE(30,"CRPIX2",dop_cen_ypix,record,stat)
 		CALL FTGKYE(30,"CROTA2",dop_p_angle,record,stat)
 		CALL FTGKYE(30,"RSUN_OBS",dop_r_sun_pix,record,stat)
+		CALL FTGKYE(30,"CDELT1",corr1,record,stat)
+		CALL FTGKYE(30,"CDELT2",corr2,record,stat)
+
+		dop_r_sun_pix = dop_r_sun_pix / corr1
 
 		CALL FTCLOS(30,stat)
 
@@ -249,7 +254,7 @@ Contains
 		offset = 1
 		DO ii=1,naxes(3) ! TODO: speed this up?
 			DO ij=1,naxes(2)
-				CALL FTPPRE(20,g,offset,naxes(1),arr(ij,:,ii),stat)
+				CALL FTPPRE(20,g,offset,naxes(1),arr(:,ij,ii),stat)
 				offset = offset + naxes(1)
 			ENDDO
 		ENDDO

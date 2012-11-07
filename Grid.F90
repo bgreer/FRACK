@@ -62,8 +62,9 @@ CONTAINS
 		DO ii=1,num
 			sinlat = sin(lat(ii))
 			sinlat = sinlat * sinlat
-			! units of radians per second
-			delta_rot(ii) = (a0 + sinlat * (a2 + a4*sinlat))*1E-6
+			! units of degrees per second
+			delta_rot(ii) = 57.2957795131D0*(a0 + sinlat * (a2 + a4*sinlat))*1E-6
+			PRINT*, a0, delta_rot(ii)
 		ENDDO
 	END SUBROUTINE SetTrackingRate
 
