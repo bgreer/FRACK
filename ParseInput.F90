@@ -16,6 +16,7 @@ MODULE ParseInput
 	INTEGER :: loaddops ! number of dopplergrams to keep in memory
 	REAL :: apode ! apodization something
 	REAL :: a0,a2,a4 ! tracking rate
+	REAL :: a_carr ! Carrington rotation rate
 
 CONTAINS
 
@@ -83,22 +84,22 @@ CONTAINS
 				CALL getarg(ii+1,strbuffer)
 				READ(strbuffer,*) trackrate
 				IF (trackrate .EQ. 0) THEN ! carrington
-					a0 = 1D0
-					a2 = 0D0
-					a4 = 0D0
-				ELSE IF (trackrate .EQ. 1) THEN ! snodgrass
 					a0 = 0D0
 					a2 = 0D0
 					a4 = 0D0
+				ELSE IF (trackrate .EQ. 1) THEN ! snodgrass
+					a0 = -0.02893D0
+					a2 = -0.341D0
+					a4 = -0.5037D0
 				ELSE IF (trackrate .EQ. 2) THEN ! custom
 					a0 = 0D0
 					a2 = 0D0
 					a4 = 0D0
 				ELSE
 					PRINT*, "Invalid tracking rate, defaulting to snodgrass"
-					a0 = 0D0
-					a2 = 0D0
-					a4 = 0D0
+					a0 = -0.02893D0
+					a2 = -0.341D0
+					a4 = -0.5037D0
 				ENDIF
 			
 			! dopplergram master list
@@ -116,7 +117,11 @@ CONTAINS
 	SUBROUTINE SetDefaults()
 		verbose = .FALSE.
 		nsteps = 2048
-		trackrate = 0
+		trackrate = 1
+		a0 = -0.02893D0
+		a2 = -0.341D0
+		a4 = -0.5037D0
+		a_carr = 2.6662237D0
 		lonrn = 00D0
 		latrn = 0D0
 		clon = 120D0
@@ -132,7 +137,6 @@ CONTAINS
 		masterlist = "doplist"
 		loaddops = 8
 		apode = 0.9375D0
-		a0 = 2.D0 ! TODO: enter tracking rates, correct for carrington
 	END SUBROUTINE SetDefaults
 
 	! Print the run details to stdout
