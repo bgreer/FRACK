@@ -198,13 +198,15 @@ CONTAINS
 		
 		r_sun_norm = r_sun_pix * 2D0 / 4096
 
+		PRINT*, cos_p_angle, sin_p_angle
+
 		! pre-computations for efficiency
 		! the b-angle is hidden in the lat_disk_center
 		cos_lat_disk_center = cos(lat_disk_center*rad_per_deg)
 		sin_lat_disk_center = sin(lat_disk_center*rad_per_deg)
 
-		cos_lat_tile_center = cos(lat_tile_center)
-		sin_lat_tile_center = sin(lat_tile_center)
+		cos_lat_tile_center = cos(lat_tile_center*rad_per_deg)
+		sin_lat_tile_center = sin(lat_tile_center*rad_per_deg)
 
 		! loop over each pixel in tile
 		DO ii=1,pixels
@@ -225,6 +227,7 @@ CONTAINS
 				IF (coslat .EQ. 0.0) THEN
 					sinlon = 0.0
 				ELSE
+					!sinlon = sinr*cosp / coslat
 					sinlon = MIN(MAX(sinr*cosp / coslat,-1D0),1D0)
 				ENDIF
 				plon = asin(sinlon)

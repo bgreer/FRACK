@@ -9,7 +9,6 @@ MODULE ParseInput
 	INTEGER :: nsteps ! number of timesteps
 	INTEGER :: trackrate ! 0=carrington, 1=snodgrass, 2=custom
 	INTEGER :: crot, cmlon ! defines the central time
-	INTEGER :: ndopp ! number of dopplergrams to keep in memory
 	LOGICAL :: dotilesize(6) ! dotilesize(i) is for 2^(i-1) degrees
 	REAL :: lonrn, latrn, clon, clat ! ranges and center lat/lons
 	REAL :: memlimit, memlimittotal ! max GB of memory to allocate for tiles
@@ -118,11 +117,10 @@ CONTAINS
 		verbose = .FALSE.
 		nsteps = 2048
 		trackrate = 0
-		ndopp = 5
-		lonrn = 40D0
-		latrn = 40D0
-		clon = 0D0
-		clat = 0D0
+		lonrn = 00D0
+		latrn = 0D0
+		clon = 39.713158D0
+		clat = -2.471883D0
 		dotilesize(1) = .FALSE.
 		dotilesize(2) = .FALSE.
 		dotilesize(3) = .FALSE.

@@ -249,7 +249,7 @@ Contains
 		offset = 1
 		DO ii=1,naxes(3) ! TODO: speed this up?
 			DO ij=1,naxes(2)
-				CALL FTPPRE(20,g,offset,naxes(1),arr(:,ij,ii),stat)
+				CALL FTPPRE(20,g,offset,naxes(1),arr(ij,:,ii),stat)
 				offset = offset + naxes(1)
 			ENDDO
 		ENDDO
