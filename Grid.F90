@@ -53,11 +53,11 @@ CONTAINS
 	! Set delta_rot for each tile
 	! INPUT: a0,a2,a4, lat(num), num
 	! OUTPUT: delta_rot(num)
-	SUBROUTINE SetTrackingRate (delta_rot, a0, a2, a4, lat, num)
+	SUBROUTINE SetTrackingRate (delta_rot, a0, a2, a4, a_carr, lat, num)
 		IMPLICIT NONE
 		INTEGER :: num, ii
 		REAL :: delta_rot(num), lat(num)
-		REAL :: sinlat, a0, a2, a4
+		REAL :: sinlat, a0, a2, a4, a_carr
 
 		DO ii=1,num
 			sinlat = sin(lat(ii))

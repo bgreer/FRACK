@@ -122,7 +122,7 @@ CONTAINS
 		a2 = -0.341D0
 		a4 = -0.5037D0
 		a_carr = 2.6662237D0
-		lonrn = 00D0
+		lonrn = 0D0
 		latrn = 0D0
 		clon = 120D0
 		clat = 0D0
