@@ -113,7 +113,7 @@ CONTAINS
 			DO ii=1,numdops
 				di = ii+stepsdone
 				IF (.NOT.dopinterp(di)) THEN
-					delta_time = 45D0*di ! TODO: fix later?
+					delta_time = 45D0*(di-0.5*nsteps)
 					! loop through each tile
 					DO ij=1,numtiles
 						! project dop ii into tile ij

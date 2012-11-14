@@ -73,7 +73,7 @@ PROGRAM FRACK
 			CALL GenerateGrid(currsize,lonrn,latrn,clon,clat,apode,&
 				lon(currtile:currtile+numtiles(ii)-1),lat(currtile:currtile+numtiles(ii)-1))
 				! Grid.F90
-			CALL SetTrackingRate(delta_rot,a0,a2,a4,a_carr,lat,numtiles(ii))
+			CALL SetTrackingRate(delta_rot,a0,a2,a4,lat,numtiles(ii))
 			currtile = currtile + numtiles(ii)
 		ENDIF
 	ENDDO
@@ -133,7 +133,7 @@ PROGRAM FRACK
 
 			! fill up each processor and run tracking
 			! until no tiles are left
-			maxtiles = FLOOR(MIN(memlimit,memlimittotal/nproc) &
+			maxtiles = FLOOR((memlimittotal/nproc) &
 				/memusage(tilesize(currtile), nsteps))
 			
 			DO WHILE (completed .LT. numtiles(ii))

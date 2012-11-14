@@ -11,12 +11,11 @@ MODULE ParseInput
 	INTEGER :: crot, cmlon ! defines the central time
 	LOGICAL :: dotilesize(6) ! dotilesize(i) is for 2^(i-1) degrees
 	REAL :: lonrn, latrn, clon, clat ! ranges and center lat/lons
-	REAL :: memlimit, memlimittotal ! max GB of memory to allocate for tiles
+	REAL :: memlimittotal ! max GB of memory to allocate for tiles
 	CHARACTER(LEN=200) :: masterlist
 	INTEGER :: loaddops ! number of dopplergrams to keep in memory
 	REAL :: apode ! apodization something
 	REAL :: a0,a2,a4 ! tracking rate
-	REAL :: a_carr ! Carrington rotation rate
 
 CONTAINS
 
@@ -27,7 +26,11 @@ CONTAINS
 		PRINT*, " -v      Verbose Mode"
 		PRINT*, " -r [#]  Tracking rate (0=car, 1=snod, 2=custom)"
 		PRINT*, " -ml [file]  Master list of dopplergrams"
-		PRINT*, " -and others"
+		PRINT*, " -ts[32,16,8,4,2,1]  Do tilesize [#]"
+		PRINT*, " -clon [#], -clat [#]  Central lon/lat"
+		PRINT*, " -lonrn [#], -latrn [#]  Lon/lat ranges"
+		PRINT*, " -memlimit [#]  Total memory limit in GB"
+		PRINT*, " -loaddops [#]  Number of dopplergrams to load at a time"
 	END SUBROUTINE Usage
 
 	! Note the lack of IMPLICIT NONE
@@ -35,6 +38,7 @@ CONTAINS
 	! TODO: add more command-line options
 	SUBROUTINE ReadCommandLine()
 		INTEGER :: ii, argcount, currarg, tempint, tempint2
+		REAL :: tempreal
 		CHARACTER(LEN=200) :: strbuffer
 
 		argcount = IARGC()
@@ -79,7 +83,7 @@ CONTAINS
 					PRINT*, "Invalid number of steps, using default."
 				ENDIF
 			
-			! tracking rate TODO insert correct coefs
+			! tracking rate
 			ELSEIF (strbuffer .EQ. "-r") THEN
 				CALL getarg(ii+1,strbuffer)
 				READ(strbuffer,*) trackrate
@@ -106,6 +110,53 @@ CONTAINS
 			ELSEIF (strbuffer .EQ. "-ml") THEN
 				masterlist = ""
 				CALL getarg(ii+1,masterlist)
+
+			! do tilesizes
+			ELSEIF (strbuffer .EQ. "-ts32") THEN
+				dotilesize(6) = .TRUE.
+			ELSEIF (strbuffer .EQ. "-ts16") THEN
+				dotilesize(5) = .TRUE.
+			ELSEIF (strbuffer .EQ. "-ts8") THEN
+				dotilesize(4) = .TRUE.
+			ELSEIF (strbuffer .EQ. "-ts4") THEN
+				dotilesize(3) = .TRUE.
+			ELSEIF (strbuffer .EQ. "-ts2") THEN
+				dotilesize(2) = .TRUE.
+			ELSEIF (strbuffer .EQ. "-ts1") THEN
+				dotilesize(1) = .TRUE.
+			
+			! central lat/lon
+			ELSEIF (strbuffer .EQ. "-clon") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempreal
+				clon = tempreal
+			ELSEIF (strbuffer .EQ. "-clat") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempreal
+				clat = tempreal
+
+			! lat/lon ranges
+			ELSEIF (strbuffer .EQ. "-lonrn") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempreal
+				lonrn = tempreal
+			ELSEIF (strbuffer .EQ. "-latrn") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempreal
+				latrn = tempreal
+
+			! memory limit
+			ELSEIF (strbuffer .EQ. "-memlimit") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempreal
+				memlimittotal = tempreal
+
+			! number of dops to load at a time
+			ELSEIF (strbuffer .EQ. "-loaddops") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempint
+				loaddops = tempint
+
 			ENDIF
 		ENDDO
 	END SUBROUTINE ReadCommandLine
@@ -121,7 +172,6 @@ CONTAINS
 		a0 = -0.02893D0
 		a2 = -0.341D0
 		a4 = -0.5037D0
-		a_carr = 2.6662237D0
 		lonrn = 0D0
 		latrn = 0D0
 		clon = 120D0
@@ -130,9 +180,8 @@ CONTAINS
 		dotilesize(2) = .FALSE.
 		dotilesize(3) = .FALSE.
 		dotilesize(4) = .FALSE.
-		dotilesize(5) = .TRUE.
+		dotilesize(5) = .FALSE.
 		dotilesize(6) = .FALSE.
-		memlimit = 4.0
 		memlimittotal = 8.0
 		masterlist = "doplist"
 		loaddops = 8
@@ -141,9 +190,10 @@ CONTAINS
 
 	! Print the run details to stdout
 	SUBROUTINE PrintDetails()
+		INTEGER :: ii
 		PRINT*, "Run Details:"
-		WRITE(*,'(A,I4)') "  Carrington Rotation = ",crot
-		WRITE(*,'(A,I3)') "  Central Meridian Longitude = ", cmlon
+!		WRITE(*,'(A,I4)') "  Carrington Rotation = ",crot
+!		WRITE(*,'(A,I3)') "  Central Meridian Longitude = ", cmlon
 		SELECT CASE (trackrate)
 			CASE (0)
 				PRINT*, "  Tracking at Carrington Rate"
@@ -153,6 +203,16 @@ CONTAINS
 				PRINT*, "  Tracking at Custom Rate"
 		END SELECT
 		WRITE(*,'(A,A)') "  Master List File: ", TRIM(masterlist)
+		WRITE(*,'(A$)') "  Tracking Tilesizes: "
+		DO ii=1,6
+			IF (dotilesize(ii)) THEN
+				WRITE(*,'(I0,A$)'), 2**(ii-1), " "
+			ENDIF
+		ENDDO
+		WRITE(*,'(A)') ""
+		PRINT*, "  Central Lon/Lat: ", clon, clat
+		PRINT*, "  Lon/Lat Ranges: ", lonrn, latrn
+		WRITE(*,'(A)') ""
 	END SUBROUTINE PrintDetails
 
 
