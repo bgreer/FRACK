@@ -221,7 +221,7 @@ Contains
 		INTEGER :: ii, ij, dim1, dim2, dim3
 		INTEGER, DIMENSION(3) :: naxes
 		REAL, DIMENSION(:,:,:) :: arr
-
+		REAL :: dnu, dk, mapscale
 	
 		! Open file
 		stat = 0
@@ -235,20 +235,13 @@ Contains
 		naxes(1) = dim1
 		CALL FTPHPR(20,simple,bitpix,3,naxes,0,1,extend,stat)
 
-		! Copy old header info TODO: decide what is needed
-!		CALL FTRDEF(20,stat)
-!		CALL FTGHSP(30,nkeys,nmore,stat)
-!		DO ii=7,nkeys
-!		   CALL FTGREC(30,ii,record,stat)
-!		   CALL FTPREC(20,record,stat)
-!		ENDDO
-!		CALL FTGKYE(30,"MAPSCALE",mapscale,record,stat)
-!		dk = 360./(mapscale*npix*696.0)
-!		PRINT*, " Adding header keys:"
-!		PRINT*, "   DELTA_NU=",dnu
-!		PRINT*, "   DELTA_K=",dk
-!		CALL FTPKYE(20,"DELTA_NU",dnu,6,"",stat)
-!		CALL FTPKYE(20,"DELTA_K",dk,6,"",stat)
+		! make some new header entries
+		mapscale = 1D0/24D0
+		dnu = 1e6/(45.*dim3)
+		dk = 360./(mapscale*dim1*696.0)
+		! these are probably right..
+		CALL FTPKYE(20,"DELTA_NU",dnu,6,"",stat)
+		CALL FTPKYE(20,"DELTA_K",dk,6,"",stat)
 !		CALL FTCLOS(30,stat)
 		g = 1
 		offset = 1
