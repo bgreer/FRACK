@@ -25,7 +25,7 @@ CONTAINS
 		INTEGER :: loaddops, numdops, dopstart, dopend
 		REAL, ALLOCATABLE :: dopdata(:,:,:), dopdata_ends(:,:,:), tempslice(:,:)
 		REAL :: tempdop(4096,4096)
-		INTEGER :: sendcnts(nproc), sdispls(nproc)
+		INTEGER :: sendcnts(nproc), sdispls(nproc), otherstart, otherend
 		INTEGER :: recvcnts(nproc), rdispls(nproc)
 		INTEGER :: ti, di, ii2
 		REAL :: currlon, currlat, delta_time
@@ -62,8 +62,8 @@ CONTAINS
 			numdops = MIN(nsteps-stepsdone, loaddops)
 			dopstart = FLOOR(numdops*1.0*myid/nproc)+1
 			dopend = FLOOR(numdops*1.0*(myid+1)/nproc)
-			dopstart = 1 ! remove this when the alltoallv works
-			dopend = numdops ! and this
+!			dopstart = 1 ! remove this when the alltoallv works
+!			dopend = numdops ! and this
 			DO ii=dopstart,dopend
 				IF (.NOT.dopinterp(stepsdone+ii)) THEN
 					ii2 = stepsdone+ii
@@ -78,36 +78,51 @@ CONTAINS
 			CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
 			! do an alltoallv to communicate dops
-!			sendcnts(:) = INT((dopend-dopstart+1)*4096*4096)
-!			sdispls(:) = INT((dopstart-1)*4096*4096) ! dont add 1?
-!			DO ii=0,nproc-1
-!				recvcnts(ii+1) = INT(FLOOR(numdops*1.0*(ii+2)/nproc)-&
-!					FLOOR(numdops*1.0*(ii+1)/nproc))*4096*4096
-!				rdispls(ii+1) = (FLOOR(numdops*1.0*(ii)/nproc))*4096*4096
-!			ENDDO
-			! TODO: fix alltoall, make nick do this
-!			CALL MPI_Alltoallv(dopdata(1,1,1),sendcnts,sdispls,MPI_REAL,&
-!				dopdata(1,1,1),recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL AddTime(2002)
-			! do an alltoallv to communicate all accessory dop info
-			sendcnts(:) = dopend-dopstart+1
-			sdispls(:) = dopstart
+			IF (dopend .GE. dopstart) THEN
+				sendcnts(:) = (dopend-dopstart+1)
+				sdispls(:) = (dopstart-1)
+			ELSE
+				sendcnts(:) = 0
+				sdispls(:) = 0
+			ENDIF
 			DO ii=0,nproc-1
-				recvcnts(ii+1) = FLOOR(numdops*1.0*(ii+1)/nproc)-&
-					FLOOR(numdops*1.0*ii/nproc)
-				rdispls(ii+1) = FLOOR(numdops*1.0*(ii)/nproc)+1
+				otherstart = FLOOR(numdops*1.0*ii/nproc)+1
+				otherend = FLOOR(numdops*1.0*(ii+1)/nproc)
+				IF (otherend .GE. otherstart) THEN
+					recvcnts(ii+1) = (otherend-otherstart+1)
+					rdispls(ii+1) = (otherstart-1)
+				ELSE
+					recvcnts(ii+1) = 0
+					rdispls(ii+1) = 0
+				ENDIF
 			ENDDO
-			! TODO: fix alltoall, make nick do this
-!			CALL MPI_Alltoallv(dop_cen_xpix,sendcnts,sdispls,MPI_REAL,&
-!			dop_cen_xpix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+
+			! Share dopplergram data as well as header info
+			CALL MPI_Alltoallv(dopdata,sendcnts*4096*4096,sdispls*4096*4096,MPI_REAL,&
+				dopdata,recvcnts*4096*4096,rdispls*4096*4096,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_lon,sendcnts,sdispls,MPI_REAL,&
+				dop_cen_lon,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_lat,sendcnts,sdispls,MPI_REAL,&
+				dop_cen_lat,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_xpix,sendcnts,sdispls,MPI_REAL,&
+				dop_cen_xpix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_ypix,sendcnts,sdispls,MPI_REAL,&
+				dop_cen_ypix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_p_angle,sendcnts,sdispls,MPI_REAL,&
+				dop_p_angle,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_r_sun_pix,sendcnts,sdispls,MPI_REAL,&
+				dop_r_sun_pix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+
+			CALL AddTime(2002)
 
 			! currently have:
 			!  tiles 'starttile' to 'endtile'
 			!  dops 'stepsdone' to 'stepsdone+numdops'
 
 			! track
-			WRITE(*,'(A,I0,A,I0,A,I0,A)') "proc",myid," tracking ",numtiles,&
-				" tiles through ",numdops," dops"
+			WRITE(*,'(A,I0,A,I0,A,I0,A,I0,A,I0,A)') "Proc",myid," tracking ",numtiles,&
+				" tiles through dops ",(dopstart+stepsdone)," to ",(dopend+stepsdone),&
+				" : ", numdops," total"
 
 			! loop through each dopplergram
 			DO ii=1,numdops
