@@ -32,10 +32,12 @@ PROGRAM FRACK
 	INTEGER :: ierr, ii, ij, it, tilecount, currsize
 	INTEGER :: currtile, ix, iy, completed, tilesperproc, starttile
 	INTEGER :: endtile, maxtiles, num
+	DOUBLE PRECISION :: starttime, endtime
 
 	! Init MPI and timer
 		! Communication_Library.F90
 	CALL Initialize_Communication()
+	starttime = MPI_Wtime()
 		! Timing.F90
 	CALL InitTimer(myid,10)
 	CALL AddTime(1)
@@ -178,6 +180,10 @@ PROGRAM FRACK
 		CALL SaveTimer(myid, nproc, "timing")
 	ENDIF
 	CALL KillTimer()
+	endtime = MPI_Wtime()
+	IF (verbose .AND. myid .EQ. 0) THEN
+		WRITE(*,'(A,I0,A)') "Total Time = ",INT(endtime-starttime)," seconds"
+	ENDIF
 	CALL Finalize_Communication()
 
 END PROGRAM
