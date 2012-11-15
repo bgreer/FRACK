@@ -16,6 +16,7 @@ MODULE ParseInput
 	INTEGER :: loaddops ! number of dopplergrams to keep in memory
 	REAL :: apode ! apodization something
 	REAL :: a0,a2,a4 ! tracking rate
+	LOGICAL :: dotiming ! record timing info
 
 CONTAINS
 
@@ -31,11 +32,11 @@ CONTAINS
 		PRINT*, " -lonrn [#], -latrn [#]  Lon/lat ranges"
 		PRINT*, " -memlimit [#]  Total memory limit in GB"
 		PRINT*, " -loaddops [#]  Number of dopplergrams to load at a time"
+		PRINT*, " -time  Record timing info for performance analysis"
 	END SUBROUTINE Usage
 
 	! Note the lack of IMPLICIT NONE
 	! Poor coding? Maybe.
-	! TODO: add more command-line options
 	SUBROUTINE ReadCommandLine()
 		INTEGER :: ii, argcount, currarg, tempint, tempint2
 		REAL :: tempreal
@@ -47,7 +48,7 @@ CONTAINS
 		DO ii=1,argcount
 			CALL getarg(ii,strbuffer)
 
-			IF (strbuffer .EQ. "--help") THEN
+			IF (strbuffer .EQ. "--help" .OR. strbuffer .EQ. "-h") THEN
 				CALL Usage()
 				STOP
 			ENDIF
@@ -156,7 +157,10 @@ CONTAINS
 				CALL getarg(ii+1,strbuffer)
 				READ(strbuffer,*) tempint
 				loaddops = tempint
-
+			
+			! record timing info
+			ELSEIF (strbuffer .EQ. "-time") THEN
+				dotiming = .TRUE.
 			ENDIF
 		ENDDO
 	END SUBROUTINE ReadCommandLine
@@ -186,6 +190,7 @@ CONTAINS
 		masterlist = "doplist"
 		loaddops = 8
 		apode = 0.9375D0
+		dotiming = .FALSE.
 	END SUBROUTINE SetDefaults
 
 	! Print the run details to stdout

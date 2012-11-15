@@ -174,7 +174,9 @@ PROGRAM FRACK
 	! End everything
 	IF (verbose .AND. myid .EQ. 0) PRINT*, "Main loop done, Finalizing MPI.."
 	CALL AddTime(8)
-	CALL SaveTimer(myid, nproc, "timing")
+	IF (dotiming) THEN
+		CALL SaveTimer(myid, nproc, "timing")
+	ENDIF
 	CALL KillTimer()
 	CALL Finalize_Communication()
 
