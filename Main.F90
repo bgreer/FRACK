@@ -102,11 +102,17 @@ PROGRAM FRACK
 		ALLOCATE(dopinterp(nsteps))
 	ENDIF
 	ALLOCATE(dop_p_angle(nsteps))
+	dop_p_angle = 0.0
 	ALLOCATE(dop_cen_lon(nsteps))
+	dop_cen_lon = 0.0
 	ALLOCATE(dop_cen_lat(nsteps))
+	dop_cen_lat = 0.0
 	ALLOCATE(dop_cen_xpix(nsteps))
+	dop_cen_xpix = 0.0
 	ALLOCATE(dop_cen_ypix(nsteps))
+	dop_cen_ypix = 0.0
 	ALLOCATE(dop_r_sun_pix(nsteps))
+	dop_r_sun_pix = 0.0
 	CALL MPI_BCAST(doptime, nsteps, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 !	CALL MPI_BCAST(doptime_ends, 2, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
 	CALL MPI_BCAST(dopfname, nsteps*200, MPI_CHARACTER, 0, MPI_COMM_WORLD, ierr)

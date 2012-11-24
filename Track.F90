@@ -112,8 +112,12 @@ CONTAINS
 				dop_p_angle,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
 			CALL MPI_Alltoallv(dop_r_sun_pix,sendcnts,sdispls,MPI_REAL,&
 				dop_r_sun_pix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
+			
+!			PRINT*, myid, dopdata(2000,2000,:)
 
 			CALL AddTime(2002)
+
+			CALL MPI_Barrier(MPI_COMM_WORLD, ierr)
 
 			! currently have:
 			!  tiles 'starttile' to 'endtile'
@@ -121,7 +125,7 @@ CONTAINS
 
 			! track
 			WRITE(*,'(A,I0,A,I0,A,I0,A,I0,A,I0,A)') "Proc",myid," tracking ",numtiles,&
-				" tiles through dops ",(dopstart+stepsdone)," to ",(dopend+stepsdone),&
+				" tiles through dops ",(stepsdone)," to ",(numdops+stepsdone),&
 				" : ", numdops," total"
 
 			! loop through each dopplergram
@@ -131,25 +135,33 @@ CONTAINS
 					delta_time = 45D0*(di-0.5*nsteps)
 					! loop through each tile
 					DO ij=1,numtiles
+!						PRINT*, myid, "projecting ", ii, ij
 						! project dop ii into tile ij
 						ti = ij + starttile - 1
 						currlon = lon(ti)+delta_rot(ti)*delta_time
 						currlat = lat(ti)
 						CALL AddTime(3000)
+!						PRINT*, myid, "calling Projection..", dop_cen_xpix(di)
 						CALL Projection(currlon,currlat,ix,dopdata(:,:,ii),tempslice,&
 							dop_cen_xpix(di),dop_cen_ypix(di),dop_cen_lon(di),&
 							dop_cen_lat(di),dop_p_angle(di),dop_r_sun_pix(di))
 						CALL AddTime(3001)
+!						PRINT*, myid, "done projecting, copying result.."
 						! copy result to tile
 						tdata(:,:,di,ij) = tempslice
+!						PRINT*, myid, "done copying"
 					ENDDO
 				ENDIF
 			ENDDO
+!			PRINT*, myid, "done projecting, barrier"
+			CALL MPI_Barrier(MPI_COMM_WORLD, ierr)
+!			PRINT*, myid, "done"
 			CALL AddTime(2003)
 
 			stepsdone = stepsdone + numdops
 		ENDDO
 		
+!		PRINT*, myid, "reaches barrier"
 		CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
 		! go back and interpolate missing frames
