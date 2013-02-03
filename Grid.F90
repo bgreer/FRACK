@@ -60,7 +60,7 @@ CONTAINS
 		REAL :: sinlat, a0, a2, a4
 
 		DO ii=1,num
-			sinlat = sin(lat(ii))
+			sinlat = sin(lat(ii)*0.01745329251D0) ! forgot to convert to radians earlier... oops..
 			sinlat = sinlat * sinlat
 			! units of degrees per second
 			delta_rot(ii) = 57.2957795131D0*(a0 + sinlat * (a2 + a4*sinlat))*1E-6

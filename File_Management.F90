@@ -20,7 +20,33 @@ Module File_Management
 	INTEGER, ALLOCATABLE :: tilesize(:)
 	REAL, ALLOCATABLE :: lon(:), lat(:)
 	REAL, ALLOCATABLE :: delta_rot(:)
+
+	REAL :: backframe(4096,4096)
 Contains
+
+	SUBROUTINE Read_Background(myid, fname, arr)
+		IMPLICIT NONE
+		CHARACTER(LEN=200) :: fname
+		REAL :: arr(4096,4096)
+		INTEGER :: nv, g, stat, blocksize, myid, nfnd
+		INTEGER :: naxes(2)
+		LOGICAL :: anyf
+
+		stat = 0
+		! Open input FITS file
+		CALL FTOPEN(40,fname,0,blocksize,stat)
+		IF (stat .NE. 0) THEN
+			WRITE(*,'(A,A)') "Error reading background file: ",fname
+			CALL Kill_All(myid)
+		ENDIF
+		! Get dimensions of data cube
+		CALL FTGKNJ(40,'NAXIS',1,2,naxes,nfnd,stat)
+
+		nv = -999
+		g = 1
+		CALL FTG2DE(40,g,nv,naxes(1),naxes(1),naxes(2),arr,anyf,stat)
+		CALL FTCLOS(40,stat)
+	END SUBROUTINE Read_Background
 
 	! Reads a single dopplergram into memory
 	! INPUT: fname, myid, verbose
@@ -30,14 +56,15 @@ Contains
 		IMPLICIT NONE
 		CHARACTER(LEN=200) :: fname, record
 		REAL :: arr(4096,4096)
-		REAL, ALLOCATABLE :: buff(:)
 		INTEGER :: stat, blocksize, nfnd, nv, g, offset
 		INTEGER :: naxes(2), ii, myid
 		LOGICAL :: anyf, verbose
 		REAL :: dop_cen_lon, dop_cen_lat
 		REAL :: dop_cen_xpix, dop_cen_ypix
 		REAL :: dop_p_angle, dop_r_sun_pix
-		REAL :: corr1, corr2
+		REAL :: corr1, corr2, dsun_obs, RSUNM, temp, degrad
+		RSUNM = 6.96D8
+		degrad = 180D0/3.14159265D0
 
 		stat = 0
 		! Open input FITS file
@@ -51,17 +78,10 @@ Contains
 		! Get dimensions of data cube
 		CALL FTGKNJ(30,'NAXIS',1,2,naxes,nfnd,stat)
 
-		ALLOCATE(buff(naxes(1)))
 		nv = -999
 		g = 1
 		offset = 1
-		buff = 0
-		DO ii=1,naxes(2)
-			CALL FTGPVE(30,g,offset,naxes(1),nv,buff,anyf,stat)
-			arr(:,ii) = buff
-			offset = offset + naxes(1)
-		ENDDO
-		DEALLOCATE(buff)
+		CALL FTG2DE(30,g,nv,naxes(1),naxes(1),naxes(2),arr,anyf,stat)
 
 		! load important keys
 		CALL FTGKYE(30,"CRLN_OBS",dop_cen_lon,record,stat) ! is this right?
@@ -70,10 +90,16 @@ Contains
 		CALL FTGKYE(30,"CRPIX2",dop_cen_ypix,record,stat)
 		CALL FTGKYE(30,"CROTA2",dop_p_angle,record,stat)
 		CALL FTGKYE(30,"RSUN_OBS",dop_r_sun_pix,record,stat)
-		CALL FTGKYE(30,"CDELT1",corr1,record,stat)
+		CALL FTGKYE(30,"DSUN_OBS",dsun_obs,record,stat)
+		CALL FTGKYE(30,"CDELT1",corr1,record,stat) ! plate scale (arcsec per pixel, x-direction)
 		CALL FTGKYE(30,"CDELT2",corr2,record,stat)
 
-		dop_r_sun_pix = dop_r_sun_pix / corr1
+		temp = dop_r_sun_pix / corr1
+		
+		dop_r_sun_pix = asin(RSUNM/dsun_obs) ! r_sun in radians
+		dop_r_sun_pix = dop_r_sun_pix * degrad ! convert to degrees
+		dop_r_sun_pix = dop_r_sun_pix * 3600D0 ! convert to arcseconds
+		dop_r_sun_pix = dop_r_sun_pix / corr1 ! convert to pixels
 
 		CALL FTCLOS(30,stat)
 
@@ -241,10 +267,12 @@ Contains
 		dk = 360./(mapscale*dim1*696.0)
 		! these are probably right..
 		CALL FTPKYE(20,"DELTA_NU",dnu,6,"",stat)
-		CALL FTPKYE(20,"DELTA_K",dk,6,"",stat)
+		CALL FTPKYE(20,"DELTA_K",dk,6,"",stat) ! this probably isnt needed
+		CALL FTPKYE(20,"MAPSCALE",mapscale,6,"",stat)
 !		CALL FTCLOS(30,stat)
 		g = 1
 		offset = 1
+!		CALL FTP3DE(20,g,naxes(1),naxes(2),naxes(1),naxes(2),naxes(3),arr,stat)
 		DO ii=1,naxes(3) ! TODO: speed this up?
 			DO ij=1,naxes(2)
 				CALL FTPPRE(20,g,offset,naxes(1),arr(:,ij,ii),stat)

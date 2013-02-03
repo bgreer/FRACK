@@ -56,6 +56,9 @@ PROGRAM FRACK
 
 	IF (verbose .AND. myid .EQ. 0) CALL PrintDetails()
 
+	! every processor read background file into memory
+	CALL Read_Background(myid, background, backframe)
+	PRINT*, myid, backframe(2000,2000)
 
 	! Count number of tiles needed for each tilesize
 	CALL CountTiles(myid, tilecount, dotilesize, numtiles, lonrn, latrn, apode, verbose)
@@ -152,7 +155,8 @@ PROGRAM FRACK
 				! call main tracking
 					! Track.F90
 				CALL TrackTiles(myid,nproc,num,currsize,nsteps,completed,&
-					dopfname,doptime,dopfname_ends,doptime_ends,dopinterp,loaddops,verbose)
+					dopfname,doptime,dopfname_ends,doptime_ends,dopinterp,&
+					loaddops,outdir,backframe,verbose)
 				completed = completed + num
 				currtile = currtile + num
 

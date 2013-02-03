@@ -12,7 +12,8 @@ MODULE ParseInput
 	LOGICAL :: dotilesize(6) ! dotilesize(i) is for 2^(i-1) degrees
 	REAL :: lonrn, latrn, clon, clat ! ranges and center lat/lons
 	REAL :: memlimittotal ! max GB of memory to allocate for tiles
-	CHARACTER(LEN=200) :: masterlist
+	CHARACTER(LEN=200) :: masterlist, background
+	CHARACTER(LEN=400) :: outdir
 	INTEGER :: loaddops ! number of dopplergrams to keep in memory
 	REAL :: apode ! apodization something
 	REAL :: a0,a2,a4 ! tracking rate
@@ -27,12 +28,14 @@ CONTAINS
 		PRINT*, " -v      Verbose Mode"
 		PRINT*, " -r [#]  Tracking rate (0=car, 1=snod, 2=custom)"
 		PRINT*, " -ml [file]  Master list of dopplergrams"
+		PRINT*, " -bk [file]  Background fits file"
 		PRINT*, " -ts[32,16,8,4,2,1]  Do tilesize [#]"
 		PRINT*, " -clon [#], -clat [#]  Central lon/lat"
 		PRINT*, " -lonrn [#], -latrn [#]  Lon/lat ranges"
 		PRINT*, " -memlimit [#]  Total memory limit in GB"
 		PRINT*, " -loaddops [#]  Number of dopplergrams to load at a time"
 		PRINT*, " -time  Record timing info for performance analysis"
+		PRINT*, " -outdir [dir]  Directory ti save output in"
 	END SUBROUTINE Usage
 
 	! Note the lack of IMPLICIT NONE
@@ -111,6 +114,16 @@ CONTAINS
 			ELSEIF (strbuffer .EQ. "-ml") THEN
 				masterlist = ""
 				CALL getarg(ii+1,masterlist)
+
+			! background file
+			ELSEIF (strbuffer .EQ. "-bk") THEN
+				background = ""
+				CALL getarg(ii+1,background)
+
+			! tile save directory
+			ELSEIF (strbuffer .EQ. "-outdir") THEN
+				outdir = ""
+				CALL getarg(ii+1,outdir)
 
 			! do tilesizes
 			ELSEIF (strbuffer .EQ. "-ts32") THEN

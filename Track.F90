@@ -12,22 +12,23 @@ CONTAINS
 	! INPUT: everything
 	! OUTPUT: nothing
 	SUBROUTINE TrackTiles(myid,nproc,num,tilesize,nsteps,startindex,&
-	dopfname, doptime, dopfname_ends, doptime_ends, dopinterp,loaddops,verbose)
+	dopfname, doptime, dopfname_ends, doptime_ends, dopinterp,loaddops,outdir,backframe,verbose)
 		IMPLICIT NONE
 		LOGICAL :: verbose
 		INTEGER :: myid, nproc, num, tilesize, startindex,nsteps,ierr
 		REAL, ALLOCATABLE :: tdata(:,:,:,:)
 		INTEGER :: starttile, endtile, ix, numtiles, ii,ij, stepsdone
 		CHARACTER(LEN=200) :: outfile, buff
+		CHARACTER(LEN=400) :: outdir
 		CHARACTER(LEN=200) :: dopfname(nsteps), dopfname_ends(2)
 		INTEGER :: doptime(nsteps), doptime_ends(2)
 		LOGICAL :: dopinterp(nsteps)
 		INTEGER :: loaddops, numdops, dopstart, dopend
 		REAL, ALLOCATABLE :: dopdata(:,:,:), dopdata_ends(:,:,:), tempslice(:,:)
-		REAL :: tempdop(4096,4096)
+		REAL :: tempdop(4096,4096), backframe(4096,4096)
 		INTEGER :: sendcnts(nproc), sdispls(nproc), otherstart, otherend
 		INTEGER :: recvcnts(nproc), rdispls(nproc)
-		INTEGER :: ti, di, ii2
+		INTEGER :: ti, di, ii2, interp1, interp2
 		REAL :: currlon, currlat, delta_time
 
 		! some local definitions
@@ -72,6 +73,8 @@ CONTAINS
 						dop_cen_xpix(ii2),dop_cen_ypix(ii2),dop_p_angle(ii2),&
 						dop_r_sun_pix(ii2),myid,verbose)
 					dopdata(:,:,ii) = tempdop(:,:)
+					! subtract background here
+					dopdata(:,:,ii) = dopdata(:,:,ii) - backframe
 				ENDIF
 			ENDDO
 			CALL AddTime(2001)
@@ -88,31 +91,32 @@ CONTAINS
 			DO ii=0,nproc-1
 				otherstart = FLOOR(numdops*1.0*ii/nproc)+1
 				otherend = FLOOR(numdops*1.0*(ii+1)/nproc)
-				IF (otherend .GE. otherstart) THEN
-					recvcnts(ii+1) = (otherend-otherstart+1)
-					rdispls(ii+1) = (otherstart-1)
-				ELSE
+				recvcnts(ii+1) = (otherend-otherstart+1)
+				rdispls(ii+1) = (otherstart-1)
+				IF (otherend .LT. otherstart) THEN
 					recvcnts(ii+1) = 0
 					rdispls(ii+1) = 0
 				ENDIF
 			ENDDO
 
 			! Share dopplergram data as well as header info
+			CALL MPI_BARRIER(MPI_COMM_WORLD, ierr)
+			IF (verbose .AND. myid .EQ. 0) WRITE(*,'(A)') "Entering Alltoallv.."
 			CALL MPI_Alltoallv(dopdata,sendcnts*4096*4096,sdispls*4096*4096,MPI_REAL,&
 				dopdata,recvcnts*4096*4096,rdispls*4096*4096,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL MPI_Alltoallv(dop_cen_lon,sendcnts,sdispls,MPI_REAL,&
-				dop_cen_lon,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL MPI_Alltoallv(dop_cen_lat,sendcnts,sdispls,MPI_REAL,&
-				dop_cen_lat,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL MPI_Alltoallv(dop_cen_xpix,sendcnts,sdispls,MPI_REAL,&
-				dop_cen_xpix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL MPI_Alltoallv(dop_cen_ypix,sendcnts,sdispls,MPI_REAL,&
-				dop_cen_ypix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL MPI_Alltoallv(dop_p_angle,sendcnts,sdispls,MPI_REAL,&
-				dop_p_angle,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			CALL MPI_Alltoallv(dop_r_sun_pix,sendcnts,sdispls,MPI_REAL,&
-				dop_r_sun_pix,recvcnts,rdispls,MPI_REAL,MPI_COMM_WORLD,ierr)
-			
+			CALL MPI_Alltoallv(dop_cen_lon,sendcnts,sdispls+stepsdone,MPI_REAL,&
+				dop_cen_lon,recvcnts,rdispls+stepsdone,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_lat,sendcnts,sdispls+stepsdone,MPI_REAL,&
+				dop_cen_lat,recvcnts,rdispls+stepsdone,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_xpix,sendcnts,sdispls+stepsdone,MPI_REAL,&
+				dop_cen_xpix,recvcnts,rdispls+stepsdone,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_cen_ypix,sendcnts,sdispls+stepsdone,MPI_REAL,&
+				dop_cen_ypix,recvcnts,rdispls+stepsdone,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_p_angle,sendcnts,sdispls+stepsdone,MPI_REAL,&
+				dop_p_angle,recvcnts,rdispls+stepsdone,MPI_REAL,MPI_COMM_WORLD,ierr)
+			CALL MPI_Alltoallv(dop_r_sun_pix,sendcnts,sdispls+stepsdone,MPI_REAL,&
+				dop_r_sun_pix,recvcnts,rdispls+stepsdone,MPI_REAL,MPI_COMM_WORLD,ierr)
+			IF (verbose .AND. myid .EQ. 0) WRITE(*,'(A)') "Finished Alltoallv."
 !			PRINT*, myid, dopdata(2000,2000,:)
 
 			CALL AddTime(2002)
@@ -167,9 +171,23 @@ CONTAINS
 		! go back and interpolate missing frames
 		DO ii=2,nsteps-1
 			! check for interpolation
-			IF (dopinterp(ii) .AND. .NOT. dopinterp(ii-1) .AND. &
-				.NOT. dopinterp(ii-1)) THEN
-				PRINT*, "interpolating step ", ii
+			IF (dopinterp(ii)) THEN
+				! find nearest non-interpolated neighbors
+				interp1 = ii-1
+				DO WHILE (interp1 .GT. 1 .AND. dopinterp(interp1))
+					interp1 = interp1 - 1
+				ENDDO
+				interp2 = ii+1
+				DO WHILE (interp2 .LT. nsteps .AND. dopinterp(interp2))
+					interp2 = interp2 + 1
+				ENDDO
+				PRINT*, "interpolating step ", ii, " from ", interp1, " and ", interp2
+				! make each pixel a linear combination
+				! loop through each local tile
+				DO ij=1,numtiles
+					tdata(:,:,ii,ij) = ((tdata(:,:,interp2,ij)-tdata(:,:,interp1,ij))*(ii-interp1)) &
+						/ FLOAT(interp2 - interp1) + tdata(:,:,interp1,ij)
+				ENDDO
 			ENDIF
 		ENDDO
 		
@@ -183,7 +201,7 @@ CONTAINS
 				! make an appropriate filename TODO this
 				CALL AddTime(4000)
 				! need to say tile size, coordinates, carrington time
-				WRITE(outfile,'(A5,I0,A1,SP,F0.4,A1,F0.4,A5)') "tile_",tilesize,"_",lon(ti),'_',lat(ti),".fits"
+				WRITE(outfile,'(A,A5,I0,A1,SP,F0.4,A1,F0.4,A5)') TRIM(outdir),"/tile_",tilesize,"_",lon(ti),'_',lat(ti),".fits"
 				IF (verbose) WRITE(*,'(A,I0,A,A)') "Proc ",myid, " saving tile ",TRIM(outfile)
 				CALL Save_Tile(tdata(:,:,:,ij), ix, ix, nsteps, TRIM(outfile), verbose)
 				CALL AddTime(4001)
@@ -211,7 +229,7 @@ CONTAINS
 		REAL :: cos_lat_disk_center, sin_lat_disk_center
 		REAL :: plon, plat, r, r_sun_pix, r_sun_norm, lon_disk_center, lat_disk_center
 		REAL :: cos_lat_lon, cos_cang, sin_lat, cos_lat, cos_lat_tile_center, sin_lat_tile_center
-		REAL :: sinlat,sinlon, sinr, cosr, x, y, sinp, cosp, coslat
+		REAL :: sinlat,sinlon, sinr, cosr, x, y, sinp, cosp, coslat, vobs
 
 		! things to possibly load?
 		REAL :: mapscale = 1D0/24D0 ! degrees per pixel
@@ -245,7 +263,7 @@ CONTAINS
 				cosp = x / r
 				sinr = sin(r)
 				cosr = cos(r)
-				!
+				! 
 				sinlat = sin_lat_tile_center * cosr + cos_lat_tile_center * sinr * sinp
 				plat = asin(sinlat)
 				coslat = cos(plat)
@@ -284,8 +302,10 @@ CONTAINS
 					xx = xr*cos_p_angle - yr*sin_p_angle
 					yy = xr*sin_p_angle + yr*cos_p_angle
 					! scale to pixels
-					xx = xx * r_sun_pix
-					yy = yy * r_sun_pix
+!					xx = xx * r_sun_pix
+!					yy = yy * r_sun_pix
+					xx = xx * 2048D0
+					yy = yy * 2048D0
 					! offset from center coords
 					xx = xx + x_disk_center
 					yy = yy + y_disk_center
@@ -297,7 +317,42 @@ CONTAINS
 			ENDDO
 		ENDDO
 
+		! compute LOS correction
+		CALL CorrectLOS(vobs)
+		! apply
+		res(:,:) = res(:,:) - vobs
+
 	END SUBROUTINE Projection
+
+	SUBROUTINE CorrectLOS(vobs)
+		IMPLICIT NONE
+		REAL :: vobs, sig, chi
+		REAL :: orbvr, orbvw, orbvn
+		REAL :: x, y, tanang_r
+
+		x = coslat * sin(clon)
+		y = sin (mapclat[m]) * coslatc - sinlatc * coslat * cos(clon)
+		chi = atan2(x, y)
+		sig = atan(sqrt(x*x + y*y) * tanang_r)
+
+		vobs = orbvr * cos(sig)
+		vobs = vobs - orbvw * sin(sig) * sin(chi)
+		vobs = vobs - orbvn * sin(sig) * cos(chi)
+
+!  double chi, clon, coslat, sig, x, y;
+!  double coslatc = cos (latc), sinlatc = sin (latc);
+!  int m, n, mset = 0;
+
+!  double tanang_r = tan (semidiam);
+!				       /*  No correction for foreshortening  */
+!  for (m = 0; m < mapct; m++) {
+!    coslat = cos (mapclat[m]);
+!    clon = mapclon[m] - lonc;
+!    x = coslat * sin (clon);
+!    y = sin (mapclat[m]) * coslatc - sinlatc * coslat * cos (clon);
+!  }
+
+	END SUBROUTINE CorrectLOS
 
 	! give an estimate of memory usage for a single tile
 	REAL FUNCTION memusage(ts,ns)
