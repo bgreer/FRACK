@@ -13,11 +13,13 @@ MODULE ParseInput
 	REAL :: lonrn, latrn, clon, clat ! ranges and center lat/lons
 	REAL :: memlimittotal ! max GB of memory to allocate for tiles
 	CHARACTER(LEN=200) :: masterlist, background
+	INTEGER :: backgroundset
 	CHARACTER(LEN=400) :: outdir
 	INTEGER :: loaddops ! number of dopplergrams to keep in memory
 	REAL :: apode ! apodization something
 	REAL :: a0,a2,a4 ! tracking rate
 	LOGICAL :: dotiming ! record timing info
+	REAL :: densepack ! fraction to overlap by
 
 CONTAINS
 
@@ -100,9 +102,37 @@ CONTAINS
 					a2 = -0.341D0
 					a4 = -0.5037D0
 				ELSE IF (trackrate .EQ. 2) THEN ! custom
-					a0 = 0D0
-					a2 = 0D0
-					a4 = 0D0
+					a0 = -0.04330D0 ! snodgrass + 10 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 3) THEN ! custom
+					a0 = -0.06485D0 ! snodgrass + 25 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 4) THEN ! custom
+					a0 = -0.10077D0 ! snodgrass + 50 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 5) THEN ! custom
+					a0 = -0.17261D0 ! snodgrass + 100 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 6) THEN ! custom
+					a0 = -0.38813D0 ! snodgrass + 250 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 7) THEN ! custom
+					a0 = 0.33027D0 ! snodgrass - 250 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 8) THEN ! custom
+					a0 = -0.747321D0 ! snodgrass + 500 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
+				ELSE IF (trackrate .EQ. 9) THEN ! custom
+					a0 = 0.689461D0 ! snodgrass - 500 m/s
+					a2 = -0.341D0
+					a4 = -0.5037D0
 				ELSE
 					PRINT*, "Invalid tracking rate, defaulting to snodgrass"
 					a0 = -0.02893D0
@@ -119,6 +149,7 @@ CONTAINS
 			ELSEIF (strbuffer .EQ. "-bk") THEN
 				background = ""
 				CALL getarg(ii+1,background)
+				backgroundset = 1
 
 			! tile save directory
 			ELSEIF (strbuffer .EQ. "-outdir") THEN
@@ -174,6 +205,15 @@ CONTAINS
 			! record timing info
 			ELSEIF (strbuffer .EQ. "-time") THEN
 				dotiming = .TRUE.
+
+			! densepack
+			ELSEIF (strbuffer .EQ. "-densepack") THEN
+				CALL getarg(ii+1,strbuffer)
+				READ(strbuffer,*) tempreal
+				IF (tempreal .GT. 0D0 .AND. tempreal .LT. 1D0) THEN
+					densepack = tempreal
+				ENDIF
+
 			ENDIF
 		ENDDO
 	END SUBROUTINE ReadCommandLine
@@ -204,6 +244,9 @@ CONTAINS
 		loaddops = 8
 		apode = 0.9375D0
 		dotiming = .FALSE.
+		densepack = 0.5D0
+		background = ""
+		backgroundset = 0
 	END SUBROUTINE SetDefaults
 
 	! Print the run details to stdout

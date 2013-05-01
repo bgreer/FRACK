@@ -57,8 +57,9 @@ PROGRAM FRACK
 	IF (verbose .AND. myid .EQ. 0) CALL PrintDetails()
 
 	! every processor read background file into memory
-	CALL Read_Background(myid, background, backframe)
-	PRINT*, myid, backframe(2000,2000)
+	IF (backgroundset .EQ. 1) THEN
+		CALL Read_Background(myid, background, backframe)
+	ENDIF
 
 	! Count number of tiles needed for each tilesize
 	CALL CountTiles(myid, tilecount, dotilesize, numtiles, lonrn, latrn, apode, verbose)

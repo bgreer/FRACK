@@ -25,8 +25,11 @@ CONTAINS
 		REAL :: lonrn, latrn, clon, clat, apode, space
 		REAL :: lonmin, latmin
 		REAL :: lon(:), lat(:)
+		REAL :: densepack
 
-		space = ts*0.5*apode
+		densepack = 0.5D0
+
+		space = ts*0.5D0*apode
 
 		numx = INT(lonrn/space+1)
 		numy = INT(latrn/space+1)
@@ -38,12 +41,13 @@ CONTAINS
 		DO ii=1,numx
 			DO ij=1,numy
 				lon(currtile) = lonmin+(ii-1)*space
+				lat(currtile) = latmin+(ij-1)*space
+				
 				! Wrap longitude around
 				IF (lon(currtile) .GT. 360D0) &
 					lon(currtile) = lon(currtile) - 360D0
 				IF (lon(currtile) .LT. 0D0) &
 					lon(currtile) = lon(currtile) + 360D0
-				lat(currtile) = latmin+(ij-1)*space
 				currtile = currtile + 1
 			ENDDO
 		ENDDO

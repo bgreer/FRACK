@@ -198,7 +198,6 @@ CONTAINS
 			IF (verbose) WRITE(*,'(A,I0,A,I0,A)') "Proc ",myid," writing ",numtiles," tiles to disk.."
 			DO ij=1,numtiles
 				ti = ij + starttile - 1
-				! make an appropriate filename TODO this
 				CALL AddTime(4000)
 				! need to say tile size, coordinates, carrington time
 				WRITE(outfile,'(A,A5,I0,A1,SP,F0.4,A1,F0.4,A5)') TRIM(outdir),"/tile_",tilesize,"_",lon(ti),'_',lat(ti),".fits"
@@ -318,26 +317,26 @@ CONTAINS
 		ENDDO
 
 		! compute LOS correction
-		CALL CorrectLOS(vobs)
+!		CALL CorrectLOS(vobs)
 		! apply
-		res(:,:) = res(:,:) - vobs
+!		res(:,:) = res(:,:) - vobs
 
 	END SUBROUTINE Projection
 
-	SUBROUTINE CorrectLOS(vobs)
-		IMPLICIT NONE
-		REAL :: vobs, sig, chi
-		REAL :: orbvr, orbvw, orbvn
-		REAL :: x, y, tanang_r
+!	SUBROUTINE CorrectLOS(vobs)
+!		IMPLICIT NONE
+!		REAL :: vobs, sig, chi
+!		REAL :: orbvr, orbvw, orbvn
+!		REAL :: x, y, tanang_r
 
-		x = coslat * sin(clon)
-		y = sin (mapclat[m]) * coslatc - sinlatc * coslat * cos(clon)
-		chi = atan2(x, y)
-		sig = atan(sqrt(x*x + y*y) * tanang_r)
+!		x = coslat * sin(clon)
+!		y = sin (mapclat[m]) * coslatc - sinlatc * coslat * cos(clon)
+!		chi = atan2(x, y)
+!		sig = atan(sqrt(x*x + y*y) * tanang_r)
 
-		vobs = orbvr * cos(sig)
-		vobs = vobs - orbvw * sin(sig) * sin(chi)
-		vobs = vobs - orbvn * sin(sig) * cos(chi)
+!		vobs = orbvr * cos(sig)
+!		vobs = vobs - orbvw * sin(sig) * sin(chi)
+!		vobs = vobs - orbvn * sin(sig) * cos(chi)
 
 !  double chi, clon, coslat, sig, x, y;
 !  double coslatc = cos (latc), sinlatc = sin (latc);
@@ -352,7 +351,7 @@ CONTAINS
 !    y = sin (mapclat[m]) * coslatc - sinlatc * coslat * cos (clon);
 !  }
 
-	END SUBROUTINE CorrectLOS
+!	END SUBROUTINE CorrectLOS
 
 	! give an estimate of memory usage for a single tile
 	REAL FUNCTION memusage(ts,ns)
